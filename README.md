@@ -82,8 +82,6 @@ Pipeline stages:
 3. Build the Docker image
 4. Simulate deployment
 
-The simulated deployment step keeps the assignment demonstrable without requiring AWS credentials in CI.
-
 ## AWS Cloud Deployment
 
 The CloudFormation template is located at:
