@@ -123,10 +123,3 @@ aws cloudformation deploy \
     PublicSubnetIds=<subnet-a>,<subnet-b>
 
 
-## Submission Checklist
-
-- GitHub repository containing application, Dockerfile, CI/CD workflow, and CloudFormation template
-- Screenshot of GitHub Actions pipeline passing
-- Screenshot of Docker container running locally
-- Screenshot or short recording of `/health` returning a healthy JSON response
-- Optional live AWS endpoint if deployed to ECS Fargate
