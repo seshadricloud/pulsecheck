@@ -1,0 +1,34 @@
+name: PulseCheck CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test-build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run unit tests
+        run: pytest -q
+
+      - name: Build container image
+        run: docker build -t pulsecheck:${{ github.sha }} .
+
+      - name: Simulate deployment
+        run: |
+          chmod +x scripts/simulate_deploy.sh
+          ./scripts/simulate_deploy.sh pulsecheck:${{ github.sha }}
