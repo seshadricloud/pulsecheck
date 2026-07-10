@@ -1,21 +1,84 @@
-# PulseCheck Microservice
+# PulseCheck
 
-PulseCheck is a lightweight health-monitoring microservice. It exposes a simple HTTP endpoint that reports service health and is packaged for repeatable deployment with Docker, GitHub Actions, and AWS CloudFormation.
+PulseCheck is a lightweight Python health-monitoring microservice built for the DevOps screening assignment. It exposes a simple HTTP health endpoint, runs inside Docker, includes an automated CI pipeline, and provides AWS CloudFormation infrastructure for deployment on ECS Fargate.
 
-## Architecture
+Repository: https://github.com/seshadricloud/pulsecheck.git
 
-- **Application:** Python FastAPI service
-- **Container:** Docker image running Uvicorn on port `8000`
-- **CI/CD:** GitHub Actions pipeline for tests, image build, and simulated deployment
-- **Infrastructure:** AWS CloudFormation template for ECS Fargate behind an Application Load Balancer
+## Project Overview
 
-## API
+The goal of this project is to show a complete DevOps workflow for a small service:
 
-`GET /health`
+1. Build a Python web service that reports health status.
+2. Containerize the service so it runs the same way on any machine.
+3. Add a CI/CD pipeline that runs tests, builds the Docker image, and simulates deployment.
+4. Define cloud infrastructure using Infrastructure as Code.
+
+## Tech Stack
+
+| Area | Tool |
+| --- | --- |
+| Application | Python 3.12, FastAPI |
+| Web server | Uvicorn |
+| Testing | Pytest, FastAPI TestClient |
+| Containerization | Docker |
+| CI/CD | GitHub Actions |
+| Infrastructure as Code | AWS CloudFormation |
+| Cloud target | Amazon ECS Fargate with Application Load Balancer |
+
+## Folder Structure
+
+```text
+.
+|-- app/
+|   `-- main.py
+|-- tests/
+|   `-- test_main.py
+|-- scripts/
+|   |-- simulate_deploy.sh
+|   `-- simulate_deploy.ps1
+|-- infra/
+|   `-- cloudformation/
+|       `-- pulsecheck-ecs-fargate.yml
+|-- .github/
+|   `-- workflows/
+|       `-- ci.yml
+|-- Dockerfile
+|-- requirements.txt
+|-- requirements-dev.txt
+`-- README.md
+```
+
+## API Endpoints
+
+### Root Endpoint
+
+```http
+GET /
+```
+
+Returns basic service information and points users to the health endpoint.
 
 Example response:
 
-json
+```json
+{
+  "service": "pulsecheck",
+  "message": "PulseCheck health-monitoring service",
+  "health_url": "/health"
+}
+```
+
+### Health Endpoint
+
+```http
+GET /health
+```
+
+Returns the current health status of the service.
+
+Example response:
+
+```json
 {
   "status": "healthy",
   "service": "pulsecheck",
@@ -23,96 +86,176 @@ json
   "hostname": "container-hostname",
   "timestamp": "2026-07-04T10:00:00+00:00"
 }
+```
 
+Response fields:
+
+| Field | Meaning |
+| --- | --- |
+| `status` | Current health status of the service |
+| `service` | Service name, default is `pulsecheck` |
+| `version` | Application version, default is `0.1.0` |
+| `hostname` | Hostname of the machine or container serving the request |
+| `timestamp` | Current UTC timestamp in ISO format |
 
 ## Run Locally
 
-Install dependencies:
+### 1. Create a Virtual Environment
 
-bash
+```bash
+python -m venv .venv
+```
+
+Activate it on Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Activate it on macOS or Linux:
+
+```bash
+source .venv/bin/activate
+```
+
+### 2. Install Dependencies
+
+```bash
 pip install -r requirements-dev.txt
+```
 
+### 3. Run Tests
 
-Run tests:
-
-bash
+```bash
 pytest -q
+```
 
+Expected result:
 
-Start the app:
+```text
+2 passed
+```
 
-bash
+### 4. Start the Application
+
+```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
 
+Open the health endpoint:
 
-Check the health endpoint:
+```text
+http://localhost:8000/health
+```
 
-bash
+Or test it from the terminal:
+
+```bash
 curl http://localhost:8000/health
-
+```
 
 ## Run With Docker
 
-Build the image:
+### 1. Build the Image
 
-bash
+```bash
 docker build -t pulsecheck:local .
+```
 
+### 2. Run the Container
 
-Run the container:
-
-bash
+```bash
 docker run --rm -p 8000:8000 pulsecheck:local
+```
 
+### 3. Test the Container
 
-Open:
+```bash
+curl http://localhost:8000/health
+```
 
-text
-http://localhost:8000/health
-
+The Dockerfile also includes a container health check that calls `/health` internally.
 
 ## CI/CD Pipeline
 
-The GitHub Actions workflow in `.github/workflows/ci.yml` runs on every push to `main` and on pull requests.
+The GitHub Actions workflow is defined in:
 
-Pipeline stages:
+```text
+.github/workflows/ci.yml
+```
 
-1. Install Python dependencies
-2. Run unit tests
-3. Build the Docker image
-4. Simulate deployment
+It runs on:
 
-The simulated deployment step keeps the assignment demonstrable without requiring AWS credentials in CI.
+- Pushes to the `main` branch
+- Pull requests
 
-## AWS Cloud Deployment
+Pipeline steps:
+
+1. Check out the repository.
+2. Set up Python 3.12.
+3. Install development dependencies.
+4. Run unit tests with `pytest`.
+5. Build the Docker image.
+6. Run a simulated deployment script.
+
+The deployment step is simulated so the project can be reviewed without requiring AWS credentials in GitHub Actions.
+
+## Simulate Deployment Locally
+
+On macOS or Linux:
+
+```bash
+./scripts/simulate_deploy.sh pulsecheck:local
+```
+
+On Windows PowerShell:
+
+```powershell
+.\scripts\simulate_deploy.ps1 -ImageTag pulsecheck:local
+```
+
+Expected output:
+
+```text
+Simulating deployment for image: pulsecheck:local
+Deployment target: AWS ECS Fargate service defined in infra/cloudformation/pulsecheck-ecs-fargate.yml
+Result: success
+```
+
+## AWS Infrastructure
 
 The CloudFormation template is located at:
 
-text
+```text
 infra/cloudformation/pulsecheck-ecs-fargate.yml
-
+```
 
 It provisions:
 
 - ECS cluster
-- Fargate task definition
+- ECS Fargate task definition
 - ECS service
 - Application Load Balancer
-- Target group with `/health` health checks
-- Security groups
+- Target group using `/health` as the health check path
+- Security groups for the load balancer and service
 - CloudWatch log group
-- ECS task execution role
+- ECS task execution IAM role
 
-High-level deployment flow:
+This architecture is suitable for a lightweight containerized service because ECS Fargate removes the need to manage servers while still supporting Docker-based deployments.
 
-1. Create an ECR repository.
-2. Build and push the Docker image to ECR.
-3. Deploy the CloudFormation stack with the image URI, VPC ID, and public subnet IDs.
-4. Use the `ServiceUrl` stack output to test the running service.
+## Cloud Deployment Flow
 
-Example CloudFormation command:
+To deploy this service to AWS:
 
-bash
+1. Create an Amazon ECR repository.
+2. Build the Docker image.
+3. Push the image to ECR.
+4. Deploy the CloudFormation stack with the ECR image URI, VPC ID, and public subnet IDs.
+5. Use the `ServiceUrl` stack output to access `/health`.
+
+Example deployment command:
+
+```bash
 aws cloudformation deploy \
   --template-file infra/cloudformation/pulsecheck-ecs-fargate.yml \
   --stack-name pulsecheck \
@@ -121,12 +264,58 @@ aws cloudformation deploy \
     ImageUri=<account-id>.dkr.ecr.<region>.amazonaws.com/pulsecheck:latest \
     VpcId=<vpc-id> \
     PublicSubnetIds=<subnet-a>,<subnet-b>
+```
 
+After deployment, CloudFormation outputs the service URL:
+
+```text
+http://<load-balancer-dns-name>/health
+```
+
+## How This Meets the Assignment
+
+### Phase 1: Application Development and Containerization
+
+- The application is written in Python using FastAPI.
+- The `/health` endpoint returns a JSON health response.
+- The Dockerfile packages the application into a portable container.
+- The same container can run locally or in AWS ECS Fargate.
+
+### Phase 2: CI/CD Automation
+
+- GitHub Actions runs automatically on push and pull request events.
+- The pipeline installs dependencies, runs tests, builds the Docker image, and simulates deployment.
+- The simulated deployment step demonstrates the delivery process without requiring cloud credentials.
+
+### Phase 3: Infrastructure as Code
+
+- AWS infrastructure is defined using CloudFormation.
+- The selected target architecture is ECS Fargate behind an Application Load Balancer.
+- The template defines compute, networking access, load balancing, logging, and IAM execution permissions.
+
+## Useful Commands
+
+| Task | Command |
+| --- | --- |
+| Install dependencies | `pip install -r requirements-dev.txt` |
+| Run tests | `pytest -q` |
+| Start app locally | `uvicorn app.main:app --reload --host 0.0.0.0 --port 8000` |
+| Build Docker image | `docker build -t pulsecheck:local .` |
+| Run Docker container | `docker run --rm -p 8000:8000 pulsecheck:local` |
+| Test health endpoint | `curl http://localhost:8000/health` |
+| Simulate deployment on Linux/macOS | `./scripts/simulate_deploy.sh pulsecheck:local` |
+| Simulate deployment on Windows | `.\scripts\simulate_deploy.ps1 -ImageTag pulsecheck:local` |
 
 ## Submission Checklist
 
-- GitHub repository containing application, Dockerfile, CI/CD workflow, and CloudFormation template
-- Screenshot of GitHub Actions pipeline passing
-- Screenshot of Docker container running locally
-- Screenshot or short recording of `/health` returning a healthy JSON response
-- Optional live AWS endpoint if deployed to ECS Fargate
+- GitHub repository link
+- Passing GitHub Actions workflow screenshot
+- Local test execution screenshot
+- Docker build screenshot
+- Docker container running screenshot
+- `/health` endpoint response screenshot
+- Optional AWS ECS Fargate service URL if deployed
+
+## Summary
+
+PulseCheck demonstrates the core DevOps lifecycle for a small production-style service: application development, automated testing, containerization, CI/CD automation, and Infrastructure as Code. It can be reviewed locally through Docker and GitHub Actions, and it is ready to be deployed to AWS ECS Fargate when cloud credentials are available.
