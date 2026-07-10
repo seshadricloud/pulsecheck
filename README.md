@@ -36,7 +36,7 @@ pip install -r requirements-dev.txt
 Run tests:
 
 bash
-pytest -q
+python -m pytest -q
 
 
 Start the app:
