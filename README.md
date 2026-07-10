@@ -127,8 +127,7 @@ pip install -r requirements-dev.txt
 ### 3. Run Tests
 
 ```bash
-pytest -q
-```
+python -m pytest -q```
 
 Expected result:
 
@@ -139,8 +138,7 @@ Expected result:
 ### 4. Start the Application
 
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000```
 
 Open the health endpoint:
 
